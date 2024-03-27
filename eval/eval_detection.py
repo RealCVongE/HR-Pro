@@ -279,8 +279,10 @@ def compute_average_precision_detection(ground_truth, prediction, tiou_threshold
 
     #tp_cumsum = np.cumsum(tp, axis=1).astype(np.float)
     #fp_cumsum = np.cumsum(fp, axis=1).astype(np.float)
-    tp_cumsum = np.cumsum(tp, axis=1).astype(float)
-    fp_cumsum = np.cumsum(fp, axis=1).astype(float)
+    # tp_cumsum = np.cumsum(tp, axis=1).astype(float)
+    # fp_cumsum = np.cumsum(fp, axis=1).astype(float)
+    tp_cumsum = np.cumsum(tp, axis=1).astype(np.float32)
+    fp_cumsum = np.cumsum(fp, axis=1).astype(np.float32)
     recall_cumsum = tp_cumsum / npos
 
     precision_cumsum = tp_cumsum / (tp_cumsum + fp_cumsum)

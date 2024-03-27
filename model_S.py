@@ -34,9 +34,14 @@ class Reliable_Memory(nn.Module):
                             else:
                                 pfeat_total[c] = torch.cat([pfeat_total[c], act_feat])
 
+            # for c in range(self.num_class):
+            #     cluster_centers = pfeat_total[c].mean(dim=0, keepdim=True)
+            #     self.proto_vectors[c] = cluster_centers
+                                
             for c in range(self.num_class):
-                cluster_centers = pfeat_total[c].mean(dim=0, keepdim=True)
-                self.proto_vectors[c] = cluster_centers
+                if c in pfeat_total and len(pfeat_total[c]) > 0:
+                    cluster_centers = pfeat_total[c].mean(dim=0, keepdim=True)
+                    self.proto_vectors[c] = cluster_centers
 
 
     def update(self, args, feats, act_seq, vid_label):
@@ -62,6 +67,7 @@ class Reliable_Memory(nn.Module):
 class Reliabilty_Aware_Block(nn.Module):
     def __init__(self, input_dim, dropout, num_heads=8, dim_feedforward=128, pos_embed=False):
         super(Reliabilty_Aware_Block, self).__init__()
+
         self.conv_query = nn.Conv1d(input_dim, input_dim, kernel_size=1, stride=1, padding=0)
         self.conv_key = nn.Conv1d(input_dim, input_dim, kernel_size=1, stride=1, padding=0)
         self.conv_value = nn.Conv1d(input_dim, input_dim, kernel_size=1, stride=1, padding=0)
@@ -75,6 +81,7 @@ class Reliabilty_Aware_Block(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
 
+    # thumos14
     def forward(self, features, attn_mask=None,):
         src = features.permute(2, 0, 1)
         q = k = src
@@ -91,7 +98,31 @@ class Reliabilty_Aware_Block(nn.Module):
 
         src = src.permute(1, 2, 0)
         return src, attn
+    
+    # beoid
+    # def forward(self, features, attn_mask=None,):
+    #     src = features.permute(2, 0, 1)
 
+    #     # Explicitly convert input tensor to float32
+    #     src = src.to(torch.float32)
+
+
+    #     #q = k = src
+    #     q = self.conv_query(features.float()).permute(2, 0, 1)
+    #     k = self.conv_key(features.float()).permute(2, 0, 1)
+    #     # q = self.conv_query(features).permute(2, 0, 1)
+    #     # k = self.conv_key(features).permute(2, 0, 1)
+
+    #     src2, attn = self.self_atten(q, k, src, attn_mask=attn_mask)
+
+    #     src = src + self.dropout1(src2)
+    #     src = self.norm1(src)
+    #     src2 = self.linear2(self.dropout(F.relu(self.linear1(src))))
+    #     src = src + self.dropout2(src2)
+    #     src = self.norm2(src)
+
+    #     src = src.permute(1, 2, 0)
+    #     return src, attn
   
 class Encoder(nn.Module):
     def __init__(self, args):
