@@ -155,6 +155,7 @@ def create_sample(file_path):
     vid_name= file_path.split('/')[-1][:-4]
     #TODO: video feature 추출해서 바로 인풋에 넣는거 연결해야됨
     vid_feature = np.load(os.path.join(file_path))
+    
     data, vid_len, sample_idx = process_feat(vid_feature)
     fps=30
     vid_duration = vid_len* 16/ fps

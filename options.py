@@ -3,28 +3,28 @@ import argparse
 import yaml
 import numpy as np
 
-# _CLASS_NAME = {
-#     "THUMOS14": [
-#         'BaseballPitch', 'BasketballDunk', 'Billiards', 'CleanAndJerk',
-#         'CliffDiving', 'CricketBowling', 'CricketShot', 'Diving',
-#         'FrisbeeCatch', 'GolfSwing', 'HammerThrow', 'HighJump', 'JavelinThrow',
-#         'LongJump', 'PoleVault', 'Shotput', 'SoccerPenalty', 'TennisSwing',
-#         'ThrowDiscus', 'VolleyballSpiking'
-#     ],
-# }
-
-_CLASS_NAME_BEOID = {
-    "BEOID": [
-        'pick-up_plug', 'plug_plug', 'switch-on_socket', 'pick-up_tape',
-        'scan_card-reader', 'open_door', 'pull_drawer', 'push_drawer',
-        'press_button', 'pick-up_cup', 'turn_tap', 'rinse_cup', 'take_cup',
-        'put_cup', 'pick-up_jar', 'put_jar', 'open_jar', 'take_spoon',
-        'stir_spoon', 'insert_wire', 'switch-on_socket','place_tape','scan_card-reader',
-        'scoop_spoon','take_spoon','pour_spoon','fill_cup','move_rest','move_seat',
-        'pull-out_weight-pin','insert_weight-pin','rotate_weight-setting','pull_rowing-machine',
-        'push_rowing-machine','let-go_rowing-machine','hold-down_button','insert_foot'
+_CLASS_NAME = {
+    "THUMOS14": [
+        'BaseballPitch', 'BasketballDunk', 'Billiards', 'CleanAndJerk',
+        'CliffDiving', 'CricketBowling', 'CricketShot', 'Diving',
+        'FrisbeeCatch', 'GolfSwing', 'HammerThrow', 'HighJump', 'JavelinThrow',
+        'LongJump', 'PoleVault', 'Shotput', 'SoccerPenalty', 'TennisSwing',
+        'ThrowDiscus', 'VolleyballSpiking'
     ],
 }
+
+# _CLASS_NAME_BEOID = {
+#     "BEOID": [
+#         'pick-up_plug', 'plug_plug', 'switch-on_socket', 'pick-up_tape',
+#         'scan_card-reader', 'open_door', 'pull_drawer', 'push_drawer',
+#         'press_button', 'pick-up_cup', 'turn_tap', 'rinse_cup', 'take_cup',
+#         'put_cup', 'pick-up_jar', 'put_jar', 'open_jar', 'take_spoon',
+#         'stir_spoon', 'insert_wire', 'switch-on_socket','place_tape','scan_card-reader',
+#         'scoop_spoon','take_spoon','pour_spoon','fill_cup','move_rest','move_seat',
+#         'pull-out_weight-pin','insert_weight-pin','rotate_weight-setting','pull_rowing-machine',
+#         'push_rowing-machine','let-go_rowing-machine','hold-down_button','insert_foot'
+#     ],
+# }
 
 def mkdir(dir):
     if not os.path.exists(dir):
