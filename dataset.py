@@ -58,7 +58,7 @@ class dataset(Dataset):
 
     def __getitem__(self, idx):
         vid_name = self.data_list[idx]
-        vid_feature = np.load(os.path.join(self.feature_dir, vid_name + ".npy"))
+        vid_feature = np.load(os.path.join(self.feature_dir, vid_name + ".npy")).astype(np.float32)
         data, vid_len, sample_idx = self.process_feat(vid_feature)
         vid_label, point_label, vid_duration = self.process_label(vid_name, vid_len, sample_idx)
         if self.stage == 1:
@@ -117,6 +117,32 @@ class dataset(Dataset):
         
         return feature, vid_len, sample_idx
 
+    # def process_label(self, vid_name, vid_len, sample_idx):
+    #     vid_label = self.vid_labels[vid_name]
+    #     vid_duration, vid_fps = self.gt_dict[vid_name]['duration'], self.gt_dict[vid_name]['fps']
+
+    #     if self.num_segments == -1:
+    #         self.t_factor_point = self.args.frames_per_sec / (vid_fps * 16)
+    #         temp_anno = np.zeros([vid_len, self.num_class], dtype=np.float32)
+    #         temp_df = self.point_anno[self.point_anno["video_id"] == vid_name][['point', 'class']]
+    #         for key in temp_df['point'].keys():
+    #             point = temp_df['point'][key]
+    #             class_idx = self.class_idx_dict[temp_df['class'][key]]
+    #             temp_anno[int(point * self.t_factor_point)][class_idx] = 1
+    #         point_label = temp_anno[sample_idx, :]
+    #         return vid_label, point_label, vid_duration
+        
+    #     else:
+    #         self.t_factor_point = self.num_segments / (vid_fps * vid_duration)
+    #         temp_anno = np.zeros([self.num_segments, self.num_class], dtype=np.float32)
+    #         temp_df = self.point_anno[self.point_anno["video_id"] == vid_name][['point', 'class']]
+    #         for key in temp_df['point'].keys():
+    #             point = temp_df['point'][key]
+    #             class_idx = self.class_idx_dict[temp_df['class'][key]]
+    #             temp_anno[int(point * self.t_factor_point)][class_idx] = 1
+    #         point_label = temp_anno
+    #         return vid_label, point_label, vid_duration
+
     def process_label(self, vid_name, vid_len, sample_idx):
         vid_label = self.vid_labels[vid_name]
         vid_duration, vid_fps = self.gt_dict[vid_name]['duration'], self.gt_dict[vid_name]['fps']
@@ -128,7 +154,9 @@ class dataset(Dataset):
             for key in temp_df['point'].keys():
                 point = temp_df['point'][key]
                 class_idx = self.class_idx_dict[temp_df['class'][key]]
-                temp_anno[int(point * self.t_factor_point)][class_idx] = 1
+                index = int(point * self.t_factor_point)
+                if 0 <= index < temp_anno.shape[0]:
+                    temp_anno[index][class_idx] = 1
             point_label = temp_anno[sample_idx, :]
             return vid_label, point_label, vid_duration
         
@@ -142,6 +170,8 @@ class dataset(Dataset):
                 temp_anno[int(point * self.t_factor_point)][class_idx] = 1
             point_label = temp_anno
             return vid_label, point_label, vid_duration
+
+   
 
     def load_proposals(self):
         proposals = self.proposals_json[self.phase]

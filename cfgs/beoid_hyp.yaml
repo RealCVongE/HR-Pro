@@ -10,7 +10,7 @@ blocked_videos: ['video_test_0000270','video_test_0001292','video_test_0001496']
 
 # training params
 num_segments: -1
-num_workers: 4
+num_workers: 4  
 num_iters: 1000
 test_iter: 50
 batch_size: 16  
