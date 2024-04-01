@@ -124,64 +124,24 @@ def process_feat( vid_feature):
         raise AssertionError('Not supported sampling !')
     feature = vid_feature[sample_idx]
     
-    return feature, vid_len, sample_idx
-def process_label( vid_len, sample_idx):
-    vid_duration, vid_fps = gt_dict[vid_name]['duration'], gt_dict[vid_name]['fps']
-
-    if NUM_SEGMENTS == -1:
-        t_factor_point = args.frames_per_sec / (vid_fps * 16)
-        temp_anno = np.zeros([vid_len, num_class], dtype=np.float32)
-        temp_df = point_anno[point_anno["video_id"] == vid_name][['point', 'class']]
-        for key in temp_df['point'].keys():
-            point = temp_df['point'][key]
-            class_idx = class_idx_dict[temp_df['class'][key]]
-            temp_anno[int(point * t_factor_point)][class_idx] = 1
-        point_label = temp_anno[sample_idx, :]
-        return  point_label, vid_duration
-    
-    else:
-        t_factor_point = NUM_SEGMENTS / (vid_fps * vid_duration)
-        temp_anno = np.zeros([NUM_SEGMENTS, num_class], dtype=np.float32)
-        temp_df = point_anno[point_anno["video_id"] == vid_name][['point', 'class']]
-        for key in temp_df['point'].keys():
-            point = temp_df['point'][key]
-            class_idx = class_idx_dict[temp_df['class'][key]]
-            temp_anno[int(point * t_factor_point)][class_idx] = 1
-        point_label = temp_anno
-        return vid_label, point_label, vid_duration
+    return feature, vid_len
 
 def create_sample(file_path):
-
     vid_name= file_path.split('/')[-1][:-4]
-    #TODO: video feature 추출해서 바로 인풋에 넣는거 연결해야됨
     vid_feature = np.load(os.path.join(file_path))
-    data, vid_len, sample_idx = process_feat(vid_feature)
-    fps=30
-    vid_duration = vid_len* 16/ fps
-    # vid_duration = process_label(vid_name, vid_len, sample_idx)
+    data, vid_len = process_feat(vid_feature)
     data= np.expand_dims(data,axis=0)
     data =torch.from_numpy(data).float().to(args.device)
     sample = dict(
         data = data, 
         vid_name = vid_name, 
         vid_len = vid_len, 
-        vid_duration = vid_duration,
     )
     return sample
 @torch.no_grad()
 def S_test(net, args, sample):
     net.eval()
-    snippet_result = {}
-    snippet_result['version'] = 'VERSION 1.3'
-    snippet_result['results'] = {}
-    snippet_result['external_data'] = {'used': True, 'details': 'Features from I3D Network'}
-
-    num_correct = 0.
-    num_total = 0.
-    
-    _data,_vid_len, vid_duration = sample['data'],  sample['vid_len'] ,sample['vid_duration']
-
-    # _vid_len =torch.tensor(_vid_len)
+    _data,_vid_len= sample['data'],  sample['vid_len']
     b=0
     outputs = net(_data.to(args.device))
     _vid_score, _cas_fuse = outputs['vid_score'], outputs['cas_fuse']
@@ -193,7 +153,6 @@ def S_test(net, args, sample):
     pred_np[np.where(score_np >= args.class_thresh)] = 1
     if pred_np.sum() == 0:
         pred_np[np.argmax(score_np)] = 1
-
     # >> post-process
     cas_fuse = _cas_fuse[b]
     num_segments = _data[b].shape[0]
@@ -211,8 +170,6 @@ def S_test(net, args, sample):
     agnostic_score = agnostic_score.cpu().numpy()[:, pred]
     agnostic_score = np.reshape(agnostic_score, (num_segments, -1, 1))
     agnostic_score = utils.upgrade_resolution(agnostic_score, args.scale)
-
-
     # >> generate proposals
     proposal_dict = {}
     for i in range(len(args.act_thresh_cas)):
@@ -224,7 +181,7 @@ def S_test(net, args, sample):
         for c in range(len(pred)):
             pos = np.where(cas_temp[:, c, 0] > 0)
             seg_list.append(pos)
-        proposals = utils.get_proposal_oic(args, seg_list, cas_temp, score_np, pred, vid_len, num_segments, vid_duration)
+        proposals = get_proposal_oic(args, seg_list, cas_temp, score_np, pred, vid_len, num_segments)
         for i in range(len(proposals)):
             class_id = proposals[i][0][2]
             if class_id not in proposal_dict.keys():
@@ -236,30 +193,47 @@ def S_test(net, args, sample):
         agnostic_score_temp = agnostic_score.copy()
         zero_location = np.where(agnostic_score_temp[:, :, 0] < args.act_thresh_agnostic[i])
         agnostic_score_temp[zero_location] = 0
-
         seg_list = []
         for c in range(len(pred)):
             pos = np.where(agnostic_score_temp[:, c, 0] > 0)
             seg_list.append(pos)
-        proposals = utils.get_proposal_oic(args, seg_list, cas_temp, score_np, pred, vid_len, num_segments, vid_duration)
+        proposals =get_proposal_oic(args, seg_list, cas_temp, score_np, pred, vid_len, num_segments)
         for i in range(len(proposals)):
             class_id = proposals[i][0][2]
             if class_id not in proposal_dict.keys():
                 proposal_dict[class_id] = []
             proposal_dict[class_id] += proposals[i]
-
     final_proposals = post_process(args, proposal_dict)
 
     return  final_proposals
-    # json_path = os.path.join(args.output_path_s1, 'snippet_result_{}.json'.format(subset, args.seed))
-    # with open(json_path, 'w') as f:
-    #     json.dump(snippet_result, f, cls=NumpyArrayEncoder)
-         
-    # if args.mode == 'train' or args.mode == 'infer':
-    #     test_acc = num_correct / num_total
-    #     print("TEST ACC:{:.4f}".format(test_acc))
-    #     test_map = log_evaluate(args, step, test_acc, logger, json_path, test_info, subset)
-    #     return test_map
+def get_proposal_oic(args, tList, wtcam, vid_score, c_pred, v_len, num_segments):
+    t_factor = float(16 * v_len) / ( args.scale * num_segments * args.frames_per_sec )
+    temp = []
+    for i in range(len(tList)):
+        c_temp = []
+        temp_list = np.array(tList[i])[0]
+        if temp_list.any():
+            grouped_temp_list = utils.grouping(temp_list)
+            for j in range(len(grouped_temp_list)):
+                inner_score = np.mean(wtcam[grouped_temp_list[j], i, 0])
+
+                len_proposal = len(grouped_temp_list[j])
+                outer_s = max(0, int(grouped_temp_list[j][0] - args._lambda * len_proposal))
+                outer_e = min(int(wtcam.shape[0] - 1), int(grouped_temp_list[j][-1] + args._lambda * len_proposal))
+                outer_temp_list = list(range(outer_s, int(grouped_temp_list[j][0]))) + \
+                                    list(range(int(grouped_temp_list[j][-1] + 1), outer_e + 1))
+                if len(outer_temp_list) == 0:
+                    outer_score = 0
+                else:
+                    outer_score = np.mean(wtcam[outer_temp_list, i, 0])
+
+                c_score = inner_score - outer_score + args.gamma * vid_score[c_pred[i]]
+                t_start = grouped_temp_list[j][0] * t_factor
+                t_end = (grouped_temp_list[j][-1] + 1) * t_factor
+                c_temp.append([t_start, t_end, c_pred[i], c_score])
+            temp.append(c_temp)
+    return temp
+
 def get_prediction(proposals, data_dict):
     t_factor =  args.frames_per_sec / args.segment_frames_num
     proposal_dict = {}
@@ -285,20 +259,12 @@ def get_prediction(proposals, data_dict):
 @torch.no_grad()
 def I_test( args, sample, net):
     net.eval()
-    final_result = {}
-    #TODO:sample 채우기
     features, proposals = sample['data'], sample['proposals']
-
-    # features = [torch.from_numpy(feat).float().to(args.device) for feat in features]
     proposals_input = [torch.from_numpy(prop).float().to(args.device) for prop in proposals]
     outputs = net(features, proposals_input, is_training=False)
-
     proposal_dict = get_prediction(proposals[0], outputs)
     final_proposals = post_process(args , proposal_dict)
-
-    final_result['results'] = final_proposals
-
-    return final_result
+    return final_proposals
 
 def reliability_ranking(args, stage1_proposals):
     '''
@@ -323,9 +289,7 @@ def reliability_ranking(args, stage1_proposals):
     return sub_proposals_dict
 
 
-def main(args):
-    # >> Initialize the task
-    # save_config(args, os.path.join(args.output_path_s1, "config.json"))
+def hr_pro(args):
     utils.set_seed(args.seed)
     os.environ['CUDA_VIVIBLE_DEVICES'] = args.gpu
     args.device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
@@ -338,8 +302,8 @@ def main(args):
 
     model.load_state_dict(torch.load(os.path.join(args.model_path_s1, "model1_seed_{}.pkl".format(args.seed))))
     model2.load_state_dict(torch.load(os.path.join(args.model_path_s2, "model2_seed_{}.pkl".format(args.seed))))
-    
-    sample=create_sample("/home/bigdeal/mnt2/HR-Pro/dataset/THUMOS14/features/test/video_test_0001409.npy")
+
+    sample=create_sample("video4.npy")
     start_time=time.time()
     stage1_proposals =S_test(model, args, sample)
     PP_proposals =reliability_ranking(args,stage1_proposals)
@@ -348,10 +312,13 @@ def main(args):
     proposals = load_proposals(PP_proposals),
     )
     final_proposal = I_test( args, stage2_data, model2)
-    print(final_proposal)    
+    # threshold = 0.
+    # filtered_data = [item for item in final_proposal if item['score'] > threshold]
     end_time=time.time()
+
+    print(final_proposal)    
     print(end_time-start_time)
     
 if __name__ == "__main__":
     args = parse_args()
-    main(args)
+    hr_pro(args)

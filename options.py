@@ -62,7 +62,7 @@ def init_args(args):
     args.class_name_lst = _CLASS_NAME[args.dataset]
     args.num_class = len(args.class_name_lst)
 
-    # define format of test information
+# define format of test information
     args.test_info = {
         "step": [], "test_acc": [], 'loss':[], 'elapsed': [], 'now': [],
         "average_mAP[0.1:0.7]": [], "average_mAP[0.1:0.5]": [], "average_mAP[0.3:0.7]": [],
