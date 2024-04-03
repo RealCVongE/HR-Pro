@@ -31,6 +31,7 @@ class dataset(Dataset):
         # >> video label
         self.vid_labels = {}
         for item_name in self.data_list:
+            item_name = item_name.split("/")[-1][:-4]
             item_anns_list = self.gt_dict[item_name]["annotations"]
             item_label = np.zeros(self.num_class)
             for ann in item_anns_list:
@@ -57,8 +58,8 @@ class dataset(Dataset):
         return len(self.data_list)
 
     def __getitem__(self, idx):
-        vid_name = self.data_list[idx]
-        vid_feature = np.load(os.path.join(self.feature_dir, vid_name + ".npy"))
+        vid_name = self.data_list[idx].split("/")[-1][:-4]
+        vid_feature = np.load(self.data_list[idx])
         data, vid_len, sample_idx = self.process_feat(vid_feature)
         vid_label, point_label, vid_duration = self.process_label(vid_name, vid_len, sample_idx)
         if self.stage == 1:

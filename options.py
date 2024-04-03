@@ -11,6 +11,9 @@ _CLASS_NAME = {
         'LongJump', 'PoleVault', 'Shotput', 'SoccerPenalty', 'TennisSwing',
         'ThrowDiscus', 'VolleyballSpiking'
     ],
+      "THEFT": [
+        'theft'
+    ],
 }
 
 def mkdir(dir):
