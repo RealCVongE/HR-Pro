@@ -129,6 +129,7 @@ def process_feat( vid_feature):
 def create_sample(file_path):
     vid_name= file_path.split('/')[-1][:-4]
     vid_feature = np.load(os.path.join(file_path))
+    print(vid_feature.shape)
     data, vid_len = process_feat(vid_feature)
     data= np.expand_dims(data,axis=0)
     data =torch.from_numpy(data).float().to(args.device)
@@ -304,6 +305,7 @@ def hr_pro(args):
     model2.load_state_dict(torch.load(os.path.join(args.model_path_s2, "model2_seed_{}.pkl".format(args.seed))))
 
     sample=create_sample("video4.npy")
+    
     start_time=time.time()
     stage1_proposals =S_test(model, args, sample)
     PP_proposals =reliability_ranking(args,stage1_proposals)

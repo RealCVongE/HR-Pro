@@ -129,7 +129,10 @@ class dataset(Dataset):
             for key in temp_df['point'].keys():
                 point = temp_df['point'][key]
                 class_idx = self.class_idx_dict[temp_df['class'][key]]
-                temp_anno[int(point * self.t_factor_point)][class_idx] = 1
+                if(int(point * self.t_factor_point)< len(temp_anno)):
+                    idx= int(point * self.t_factor_point)-1
+                # assert int(point * self.t_factor_point)< len(temp_anno), f"{vid_name}: 길이가{len(temp_anno)} 인데,{int(point * self.t_factor_point)} 가 초과함 ,point: {point}, t_factor_point {self.t_factor_point}"
+                temp_anno[idx][class_idx] = 1
             point_label = temp_anno[sample_idx, :]
             return vid_label, point_label, vid_duration
         
@@ -148,6 +151,7 @@ class dataset(Dataset):
         proposals = self.proposals_json[self.phase]
         self.proposals_new = dict()
         for vid_name in self.data_list:
+            vid_name = vid_name.split("/")[-1][:-4]
             self.proposals_new[vid_name] = dict()
             # >> caculate t_factor(time --> snippet)
             t_factor = self.t_factor

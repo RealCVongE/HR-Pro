@@ -2,7 +2,7 @@
 backbone: 'i3d'
 dataset: "THEFT"
 data_path: "./dataset/THEFT" 
-frames_per_sec: 3
+frames_per_sec: 10
 segment_frames_num: 16 
 feature_dim: 2048
 tIoU_thresh: "np.linspace(0.1, 0.7, 7)" 

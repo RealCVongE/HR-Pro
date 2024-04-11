@@ -64,8 +64,8 @@ def main(args):
                     logger.log_value('acc/best mAP', best_mAP, step)
         else:
             model.load_state_dict(torch.load(os.path.join(args.model_path_s1, "model1_seed_{}.pkl".format(args.seed))))
-            S_test(model, args, test_loader, None, 0, test_info, subset='test')
-            S_test(model, args, train_loader, None, 0, test_info, subset='train')
+            # S_test(model, args, test_loader, None, 0, test_info, subset='test')
+            # S_test(model, args, train_loader, None, 0, test_info, subset='train')
             reliability_ranking(args, train_loader, test_loader)
 
 

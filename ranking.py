@@ -63,6 +63,8 @@ def reliability_ranking(args, train_loader, test_loader):
                         else:
                             start = int(random.uniform(seg[0], seg[-1]))
                             end = int(random.uniform(start, seg[-1]))
+                            if(start==end):
+                                end+=1
                             if start < end:
                                 NP.append([float(start), float(end), -(end-start)/(seg[-1]-seg[0])])
                 sub_proposals_dict[vid_name]['NP'] = NP

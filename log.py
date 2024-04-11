@@ -58,7 +58,7 @@ def save_best_record(test_info, log_filepath):
         ))
 def log_evaluate(args, step, test_acc, logger, json_path, test_info, subset='test'):
     # >> evaluate mAP
-    mapping_subset = {'THUMOS14':{'train':'Validation', 'test':'Test'}}
+    mapping_subset = {'THEFT':{'train':'Test' , 'test': 'Validation'}}
     subset_name = mapping_subset[args.dataset][subset]
     gt_path = os.path.join(args.data_path, "gt_full.json")
     anet_detection = ANETdetection(gt_path, json_path, subset=subset_name, tiou_thresholds=args.tIoU_thresh,

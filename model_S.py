@@ -76,6 +76,7 @@ class Reliabilty_Aware_Block(nn.Module):
         self.dropout2 = nn.Dropout(dropout)
 
     def forward(self, features, attn_mask=None,):
+        features = features.float()
         src = features.permute(2, 0, 1)
         q = k = src
         q = self.conv_query(features).permute(2, 0, 1)

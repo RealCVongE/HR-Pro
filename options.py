@@ -12,7 +12,7 @@ _CLASS_NAME = {
         'ThrowDiscus', 'VolleyballSpiking'
     ],
       "THEFT": [
-        'theft'
+        "moving","select","test","buying","return","compare",'theft' 
     ],
 }
 
